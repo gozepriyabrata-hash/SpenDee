@@ -1,8 +1,17 @@
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash
 
-from database.db import create_user, email_exists, get_db, init_db, seed_db
+from database.db import (
+    create_user,
+    email_exists,
+    get_db,
+    get_user_by_email,
+    init_db,
+    seed_db,
+)
 
 app = Flask(__name__)
+app.secret_key = "dev-secret-key-change-in-production"
 
 with app.app_context():
     init_db()
@@ -42,8 +51,21 @@ def register():
     return render_template("register.html")
 
 
-@app.route("/login")
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+
+        user = get_user_by_email(email)
+        if user is None or not check_password_hash(user["password_hash"], password):
+            error = "Invalid email or password."
+            return render_template("login.html", error=error)
+
+        session["user_id"] = user["id"]
+        session["user_name"] = user["name"]
+        return redirect(url_for("profile"))
+
     return render_template("login.html")
 
 
@@ -57,14 +79,15 @@ def privacy():
     return render_template("privacy.html")
 
 
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
-
-@app.route("/logout")
-def logout():
-    return "Logout — coming in Step 3"
-
 
 @app.route("/profile")
 def profile():

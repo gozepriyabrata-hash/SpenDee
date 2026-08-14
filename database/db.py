@@ -84,3 +84,28 @@ def seed_db():
         conn.commit()
     finally:
         conn.close()
+
+
+def email_exists(email):
+    conn = get_db()
+    try:
+        row = conn.execute(
+            "SELECT 1 FROM users WHERE email = ? LIMIT 1", (email,)
+        ).fetchone()
+        return row is not None
+    finally:
+        conn.close()
+
+
+def create_user(name, email, password):
+    conn = get_db()
+    try:
+        password_hash = generate_password_hash(password)
+        cursor = conn.execute(
+            "INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)",
+            (name, email, password_hash),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()

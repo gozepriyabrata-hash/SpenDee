@@ -120,3 +120,90 @@ def get_user_by_email(email):
         ).fetchone()
     finally:
         conn.close()
+
+
+def get_summary_stats(user_id):
+    conn = get_db()
+    try:
+        totals = conn.execute(
+            "SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count "
+            "FROM expenses WHERE user_id = ?",
+            (user_id,),
+        ).fetchone()
+        top = conn.execute(
+            """
+            SELECT category, SUM(amount) AS total
+            FROM expenses
+            WHERE user_id = ?
+            GROUP BY category
+            ORDER BY total DESC
+            LIMIT 1
+            """,
+            (user_id,),
+        ).fetchone()
+        return {
+            "total_spent": totals["total"],
+            "transaction_count": totals["count"],
+            "top_category": top["category"] if top else "—",
+        }
+    finally:
+        conn.close()
+
+
+def get_recent_transactions(user_id, limit=10):
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            """
+            SELECT id, date, description, category, amount
+            FROM expenses
+            WHERE user_id = ?
+            ORDER BY date DESC, id DESC
+            LIMIT ?
+            """,
+            (user_id, limit),
+        ).fetchall()
+        return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_user_by_id(user_id):
+    conn = get_db()
+    try:
+        return conn.execute(
+            "SELECT id, name, email, created_at FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+
+
+def get_category_breakdown(user_id):
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            """
+            SELECT category, SUM(amount) AS total
+            FROM expenses
+            WHERE user_id = ?
+            GROUP BY category
+            ORDER BY total DESC
+            """,
+            (user_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    if not rows:
+        return []
+
+    grand_total = sum(row["total"] for row in rows)
+    raw_pcts = [(row["total"] / grand_total) * 100 for row in rows]
+    rounded = [round(p) for p in raw_pcts]
+    rounded[0] += 100 - sum(rounded)  # rows[0] is the largest category (ORDER BY total DESC)
+
+    return [
+        {"name": row["category"], "total": row["total"], "percent": rounded[i]}
+        for i, row in enumerate(rows)
+    ]

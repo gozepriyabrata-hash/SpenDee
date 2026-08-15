@@ -97,7 +97,7 @@ pytest -s
 | `GET /login` | Implemented — renders `login.html` |
 | `POST /login` | Implemented — verifies credentials, creates session |
 | `GET /logout` | Implemented — clears session, redirects to `/login` |
-| `GET /profile` | Implemented — renders `profile.html` (hardcoded data; DB wiring in Step 5) |
+| `GET /profile` | Implemented — renders `profile.html` with live data from the database |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
 | `GET /expenses/<id>/delete` | Stub — Step 9 |

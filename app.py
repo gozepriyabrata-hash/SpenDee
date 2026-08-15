@@ -1,11 +1,17 @@
+from datetime import datetime
+
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
 from database.db import (
     create_user,
     email_exists,
+    get_category_breakdown,
     get_db,
+    get_recent_transactions,
+    get_summary_stats,
     get_user_by_email,
+    get_user_by_id,
     init_db,
     seed_db,
 )
@@ -85,44 +91,40 @@ def logout():
     return redirect(url_for("login"))
 
 
-# ------------------------------------------------------------------ #
-# Placeholder routes — students will implement these                  #
-# ------------------------------------------------------------------ #
+def _compute_initials(name):
+    parts = [p for p in name.split() if p]
+    if not parts:
+        return ""
+    if len(parts) == 1:
+        return parts[0][0].upper()
+    return (parts[0][0] + parts[-1][0]).upper()
+
+
+def _format_member_since(created_at):
+    dt = datetime.strptime(created_at.split(" ")[0], "%Y-%m-%d")
+    return dt.strftime("%B %Y")
+
 
 @app.route("/profile")
 def profile():
     if not session.get("user_id"):
         return redirect(url_for("login"))
 
+    user_id = session["user_id"]
+    user_row = get_user_by_id(user_id)
+    if user_row is None:
+        session.clear()
+        return redirect(url_for("login"))
+
     user = {
-        "name": "Demo User",
-        "email": "demo@spendly.com",
-        "initials": "DU",
-        "member_since": "March 2025",
+        "name": user_row["name"],
+        "email": user_row["email"],
+        "initials": _compute_initials(user_row["name"]),
+        "member_since": _format_member_since(user_row["created_at"]),
     }
-
-    summary = {
-        "total_spent": 423.64,
-        "transaction_count": 8,
-        "top_category": "Shopping",
-    }
-
-    expenses = [
-        {"date": "2026-08-14", "description": "Dinner at a restaurant", "category": "Food", "amount": 32.40},
-        {"date": "2026-08-11", "description": "New running shoes", "category": "Shopping", "amount": 150.00},
-        {"date": "2026-08-08", "description": "Movie night with friends", "category": "Entertainment", "amount": 60.00},
-        {"date": "2026-08-06", "description": "Electricity bill", "category": "Bills", "amount": 89.99},
-        {"date": "2026-08-04", "description": "Monthly bus pass top-up", "category": "Transport", "amount": 45.00},
-        {"date": "2026-08-02", "description": "Groceries at local market", "category": "Food", "amount": 12.50},
-    ]
-
-    categories = [
-        {"name": "Food", "total": 44.90, "percent": 60},
-        {"name": "Shopping", "total": 150.00, "percent": 100},
-        {"name": "Bills", "total": 89.99, "percent": 60},
-        {"name": "Entertainment", "total": 60.00, "percent": 40},
-        {"name": "Transport", "total": 45.00, "percent": 30},
-    ]
+    summary = get_summary_stats(user_id)
+    expenses = get_recent_transactions(user_id)
+    categories = get_category_breakdown(user_id)
 
     return render_template(
         "profile.html",
@@ -132,6 +134,10 @@ def profile():
         categories=categories,
     )
 
+
+# ------------------------------------------------------------------ #
+# Placeholder routes — students will implement these                  #
+# ------------------------------------------------------------------ #
 
 @app.route("/expenses/add")
 def add_expense():

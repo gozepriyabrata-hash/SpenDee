@@ -122,24 +122,35 @@ def get_user_by_email(email):
         conn.close()
 
 
-def get_summary_stats(user_id):
+def _date_range_clause(user_id, start_date, end_date):
+    params = [user_id]
+    clause = ""
+    if start_date and end_date:
+        clause = " AND date BETWEEN ? AND ?"
+        params += [start_date, end_date]
+    return clause, params
+
+
+def get_summary_stats(user_id, start_date=None, end_date=None):
     conn = get_db()
     try:
+        date_clause, params = _date_range_clause(user_id, start_date, end_date)
+
         totals = conn.execute(
-            "SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count "
-            "FROM expenses WHERE user_id = ?",
-            (user_id,),
+            f"SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count "
+            f"FROM expenses WHERE user_id = ?{date_clause}",
+            params,
         ).fetchone()
         top = conn.execute(
-            """
+            f"""
             SELECT category, SUM(amount) AS total
             FROM expenses
-            WHERE user_id = ?
+            WHERE user_id = ?{date_clause}
             GROUP BY category
             ORDER BY total DESC
             LIMIT 1
             """,
-            (user_id,),
+            params,
         ).fetchone()
         return {
             "total_spent": totals["total"],
@@ -150,18 +161,21 @@ def get_summary_stats(user_id):
         conn.close()
 
 
-def get_recent_transactions(user_id, limit=10):
+def get_recent_transactions(user_id, limit=10, start_date=None, end_date=None):
     conn = get_db()
     try:
+        date_clause, params = _date_range_clause(user_id, start_date, end_date)
+        params.append(limit)
+
         rows = conn.execute(
-            """
+            f"""
             SELECT id, date, description, category, amount
             FROM expenses
-            WHERE user_id = ?
+            WHERE user_id = ?{date_clause}
             ORDER BY date DESC, id DESC
             LIMIT ?
             """,
-            (user_id, limit),
+            params,
         ).fetchall()
         return [dict(row) for row in rows]
     finally:
@@ -179,18 +193,20 @@ def get_user_by_id(user_id):
         conn.close()
 
 
-def get_category_breakdown(user_id):
+def get_category_breakdown(user_id, start_date=None, end_date=None):
     conn = get_db()
     try:
+        date_clause, params = _date_range_clause(user_id, start_date, end_date)
+
         rows = conn.execute(
-            """
+            f"""
             SELECT category, SUM(amount) AS total
             FROM expenses
-            WHERE user_id = ?
+            WHERE user_id = ?{date_clause}
             GROUP BY category
             ORDER BY total DESC
             """,
-            (user_id,),
+            params,
         ).fetchall()
     finally:
         conn.close()

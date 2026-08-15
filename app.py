@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
@@ -105,6 +105,30 @@ def _format_member_since(created_at):
     return dt.strftime("%B %Y")
 
 
+def _parse_date_filter(query_params):
+    start_date = query_params.get("start_date", "").strip()
+    end_date = query_params.get("end_date", "").strip()
+
+    if not start_date or not end_date:
+        return None, None
+
+    try:
+        start_dt = date.fromisoformat(start_date)
+        end_dt = date.fromisoformat(end_date)
+    except ValueError:
+        return None, None
+
+    if start_dt > end_dt:
+        return None, None
+
+    return start_date, end_date
+
+
+def _format_display_date(iso_date):
+    dt = date.fromisoformat(iso_date)
+    return f"{dt.day} {dt.strftime('%b %Y')}"
+
+
 @app.route("/profile")
 def profile():
     if not session.get("user_id"):
@@ -122,9 +146,12 @@ def profile():
         "initials": _compute_initials(user_row["name"]),
         "member_since": _format_member_since(user_row["created_at"]),
     }
-    summary = get_summary_stats(user_id)
-    expenses = get_recent_transactions(user_id)
-    categories = get_category_breakdown(user_id)
+
+    start_date, end_date = _parse_date_filter(request.args)
+
+    summary = get_summary_stats(user_id, start_date, end_date)
+    expenses = get_recent_transactions(user_id, start_date=start_date, end_date=end_date)
+    categories = get_category_breakdown(user_id, start_date, end_date)
 
     return render_template(
         "profile.html",
@@ -132,6 +159,10 @@ def profile():
         summary=summary,
         expenses=expenses,
         categories=categories,
+        start_date=start_date,
+        end_date=end_date,
+        start_date_display=_format_display_date(start_date) if start_date else None,
+        end_date_display=_format_display_date(end_date) if end_date else None,
     )
 
 

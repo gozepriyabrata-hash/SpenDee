@@ -1,0 +1,10 @@
+.form-optional {
+    font-weight: 400;
+    color: var(--ink-faint);
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+select.form-input {
+    cursor: pointer;
+}

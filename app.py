@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, abort, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
 from database.db import (
@@ -9,12 +9,14 @@ from database.db import (
     email_exists,
     get_category_breakdown,
     get_db,
+    get_expense_by_id,
     get_recent_transactions,
     get_summary_stats,
     get_user_by_email,
     get_user_by_id,
     init_db,
     seed_db,
+    update_expense,
 )
 
 app = Flask(__name__)
@@ -251,9 +253,46 @@ def add_expense():
     )
 
 
-@app.route("/expenses/<int:id>/edit")
+@app.route("/expenses/<int:id>/edit", methods=["GET", "POST"])
 def edit_expense(id):
-    return "Edit expense — coming in Step 8"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    expense = get_expense_by_id(id, session["user_id"])
+    if expense is None:
+        abort(404)
+
+    if request.method == "POST":
+        amount, fields, error = _validate_expense_form(request.form)
+
+        if error:
+            return render_template(
+                "edit_expense.html",
+                error=error,
+                categories=EXPENSE_CATEGORIES,
+                expense_id=id,
+                **fields,
+            )
+
+        update_expense(
+            id,
+            session["user_id"],
+            round(amount, 2),
+            fields["category"],
+            fields["date_value"],
+            fields["description"] or None,
+        )
+        return redirect(url_for("profile"))
+
+    return render_template(
+        "edit_expense.html",
+        categories=EXPENSE_CATEGORIES,
+        expense_id=id,
+        amount=expense["amount"],
+        category=expense["category"],
+        date_value=expense["date"],
+        description=expense["description"],
+    )
 
 
 @app.route("/expenses/<int:id>/delete")

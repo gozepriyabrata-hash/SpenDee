@@ -4,6 +4,7 @@ from flask import Flask, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
 
 from database.db import (
+    create_expense,
     create_user,
     email_exists,
     get_category_breakdown,
@@ -18,6 +19,9 @@ from database.db import (
 
 app = Flask(__name__)
 app.secret_key = "dev-secret-key-change-in-production"
+
+EXPENSE_CATEGORIES = ["Food", "Transport", "Bills", "Health", "Entertainment", "Shopping", "Other"]
+DESCRIPTION_MAX_LENGTH = 500
 
 with app.app_context():
     init_db()
@@ -166,13 +170,85 @@ def profile():
     )
 
 
+@app.route("/analytics")
+def analytics():
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    return render_template("analytics.html")
+
+
 # ------------------------------------------------------------------ #
 # Placeholder routes — students will implement these                  #
 # ------------------------------------------------------------------ #
 
-@app.route("/expenses/add")
+def _validate_expense_form(form):
+    """Returns (amount, fields, error). fields are the cleaned/submitted
+    values for re-rendering the form; error is None if valid."""
+    amount_raw = form.get("amount", "").strip()
+    category = form.get("category", "").strip()
+    expense_date = form.get("date", "").strip()
+    description = form.get("description", "").strip()
+
+    try:
+        amount = float(amount_raw)
+    except ValueError:
+        amount = None
+
+    error = None
+    if amount is None or not (0 < amount < 1_000_000_000):
+        error = "Enter a valid amount greater than zero."
+    elif category not in EXPENSE_CATEGORIES:
+        error = "Select a valid category."
+    elif not expense_date:
+        error = "Date is required."
+    elif len(description) > DESCRIPTION_MAX_LENGTH:
+        error = f"Description is too long (max {DESCRIPTION_MAX_LENGTH} characters)."
+    else:
+        try:
+            date.fromisoformat(expense_date)
+        except ValueError:
+            error = "Enter a valid date."
+
+    fields = {
+        "amount": amount_raw,
+        "category": category,
+        "date_value": expense_date,
+        "description": description,
+    }
+    return amount, fields, error
+
+
+@app.route("/expenses/add", methods=["GET", "POST"])
 def add_expense():
-    return "Add expense — coming in Step 7"
+    if not session.get("user_id"):
+        return redirect(url_for("login"))
+
+    if request.method == "POST":
+        amount, fields, error = _validate_expense_form(request.form)
+
+        if error:
+            return render_template(
+                "add_expense.html",
+                error=error,
+                categories=EXPENSE_CATEGORIES,
+                **fields,
+            )
+
+        create_expense(
+            session["user_id"],
+            round(amount, 2),
+            fields["category"],
+            fields["date_value"],
+            fields["description"] or None,
+        )
+        return redirect(url_for("profile"))
+
+    return render_template(
+        "add_expense.html",
+        categories=EXPENSE_CATEGORIES,
+        date_value=date.today().isoformat(),
+    )
 
 
 @app.route("/expenses/<int:id>/edit")

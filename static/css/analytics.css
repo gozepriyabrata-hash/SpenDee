@@ -1,0 +1,145 @@
+/* ------------------------------------------------------------------ */
+/* Page shell                                                          */
+/* ------------------------------------------------------------------ */
+
+.analytics-section {
+    min-height: calc(100vh - 60px - 100px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    background: linear-gradient(135deg, #f4f3f0 0%, #ebe9e3 50%, #f4f3f0 100%);
+}
+
+/* ------------------------------------------------------------------ */
+/* Card                                                                 */
+/* ------------------------------------------------------------------ */
+
+.analytics-card {
+    position: relative;
+    overflow: hidden;
+    background: var(--paper-card);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 480px;
+    padding: 3.5rem 3rem;
+    text-align: center;
+}
+
+.analytics-card::before,
+.analytics-card::after {
+    content: "";
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: var(--paper-warm);
+}
+
+.analytics-card::before {
+    top: -75px;
+    right: -75px;
+}
+
+.analytics-card::after {
+    bottom: -75px;
+    left: -75px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Icon                                                                 */
+/* ------------------------------------------------------------------ */
+
+.analytics-icon {
+    position: relative;
+    z-index: 1;
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 2rem;
+    background: var(--accent);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.analytics-icon svg {
+    width: 42px;
+    height: 42px;
+    color: var(--paper-card);
+}
+
+/* ------------------------------------------------------------------ */
+/* Badge, title, body                                                   */
+/* ------------------------------------------------------------------ */
+
+.analytics-badge {
+    position: relative;
+    z-index: 1;
+    display: inline-block;
+    background: var(--accent);
+    color: var(--paper-card);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.25rem;
+    border-radius: 999px;
+    margin-bottom: 1.5rem;
+}
+
+.analytics-title {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    color: var(--accent);
+    margin-bottom: 1rem;
+}
+
+.analytics-body {
+    position: relative;
+    z-index: 1;
+    color: var(--ink-muted);
+    font-size: 0.95rem;
+    line-height: 1.7;
+    max-width: 360px;
+    margin: 0 auto 2rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Dots + note                                                          */
+/* ------------------------------------------------------------------ */
+
+.analytics-dots {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.analytics-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ink-faint);
+}
+
+.analytics-note {
+    position: relative;
+    z-index: 1;
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive                                                          */
+/* ------------------------------------------------------------------ */
+
+@media (max-width: 600px) {
+    .analytics-section { padding: 2rem 1rem; }
+    .analytics-card { padding: 2.5rem 1.5rem; }
+}

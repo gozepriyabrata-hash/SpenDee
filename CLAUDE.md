@@ -100,7 +100,7 @@ pytest -s
 | `GET /profile` | Implemented — renders `profile.html` with live data from the database |
 | `GET /expenses/add` | Stub — Step 7 |
 | `GET /expenses/<id>/edit` | Stub — Step 8 |
-| `GET /expenses/<id>/delete` | Stub — Step 9 |
+| `POST /expenses/<id>/delete` | Implemented — verifies ownership, deletes the expense, redirects to `/profile` |
 
 **Do not implement a stub route unless the active task explicitly targets that step.**
 
